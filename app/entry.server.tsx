@@ -7,7 +7,11 @@ import { isbot } from "isbot";
 import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
 
-export const streamTimeout = 5_000;
+// Bumped from the RRv7 scaffold default (5s) so the Discover page's AI
+// recipe-matching Suspense boundary (bounded at 12s, see
+// pantry-recipe-matcher.server.ts) has room to resolve or time out on its
+// own instead of getting killed by this global abort first.
+export const streamTimeout = 15_000;
 
 export default function handleRequest(
   request: Request,
