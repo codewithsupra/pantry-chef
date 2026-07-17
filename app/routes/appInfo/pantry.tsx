@@ -303,21 +303,41 @@ function Shelf({ shelf, dotColorClass }: ShelfProps) {
       <saveShelfNameFetcher.Form method="post">
         <input type="hidden" name="_action" value="saveShelfName" />
         <input type="hidden" name="shelfId" value={shelf.id} />
-        <div className="flex items-start gap-2.5 mb-1">
+        <div className="group flex items-start gap-2.5 mb-1">
           <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${dotColorClass}`} />
-          <div className="flex-1">
-            <input
-              ref={shelfNameInputRef}
-              type="text"
-              name="shelfName"
-              defaultValue={shelf.name}
-              placeholder="Name this shelf…"
-              onBlur={(e) => saveShelfNameFetcher.submit(e.currentTarget.form)}
-              className={`w-full outline-none transition-colors placeholder:text-stone-400 bg-transparent border-b-2 pb-0.5 font-serif font-medium text-[21px] text-stone-800 rounded-none ${shelfNameError ? "border-b-red-400 focus:border-b-red-400" : "border-b-transparent hover:border-b-stone-300 focus:border-b-primary"}`}
-            />
-            {shelfNameError && (
-              <p className="mt-1 text-xs text-red-400">{shelfNameError}</p>
-            )}
+          <div className="flex-1 flex items-start gap-1.5">
+            <div className="flex-1">
+              <input
+                ref={shelfNameInputRef}
+                type="text"
+                name="shelfName"
+                defaultValue={shelf.name}
+                placeholder="Name this shelf…"
+                onBlur={(e) => saveShelfNameFetcher.submit(e.currentTarget.form)}
+                className={`w-full outline-none transition-colors placeholder:text-stone-400 bg-transparent border-b-2 pb-0.5 font-serif font-medium text-[21px] text-stone-800 rounded-none ${shelfNameError ? "border-b-red-400 focus:border-b-red-400" : "border-b-transparent hover:border-b-stone-300 focus:border-b-primary"}`}
+              />
+              {shelfNameError && (
+                <p className="mt-1 text-xs text-red-400">{shelfNameError}</p>
+              )}
+            </div>
+            {/*
+              Visible save affordance: the onBlur handler above needs JS to
+              fire, so without it (or for a keyboard user who tabs away
+              instead of blurring via click) there was previously no way to
+              save a rename except pressing Enter. This is a real <button
+              type="submit"> in the same <form>, so it works identically
+              with JS on or off. Kept low-visual-weight (only shown while
+              the row has focus) so it doesn't clutter the default state.
+            */}
+            <button
+              type="submit"
+              title="Save name"
+              className="mt-2 p-1 rounded-md text-stone-300 opacity-0 group-focus-within:opacity-100 hover:text-primary hover:opacity-100 transition-opacity shrink-0"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
           </div>
           <deleteShelfFetcher.Form method="post" className="mt-0.5">
             <input type="hidden" name="shelfId" value={shelf.id} />
