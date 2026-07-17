@@ -1,0 +1,6 @@
+node_modules/
+build/
+.react-router/
+postgres_data/
+generated/
+.env

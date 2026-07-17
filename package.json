@@ -1,0 +1,46 @@
+{
+  "name": "react-router-recipes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@openrouter/sdk": "^0.13.58",
+    "@prisma/client": "^6.19.3",
+    "@react-router/node": "8.0.0",
+    "@react-router/serve": "8.0.0",
+    "classnames": "^2.5.1",
+    "cryptr": "^6.4.0",
+    "dotenv": "^17.4.2",
+    "isbot": "^5.1.36",
+    "prisma": "^6.19.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hot-toast": "^2.6.0",
+    "react-router": "8.0.0",
+    "resend": "^6.17.2",
+    "svg-captcha": "^1.4.0",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@react-router/dev": "8.0.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/cryptr": "^4.0.3",
+    "@types/node": "^22",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "tailwindcss": "^4.2.2",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.3"
+  }
+}

@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: oklch(62% 0.15 40);
+  --color-primary-light: oklch(58% 0.15 38);
+  --color-secondary: oklch(55% 0.16 30);
+  --color-background: oklch(97.5% 0.014 75);
+  --color-surface: oklch(99% 0.006 75);
+  --color-surface-raised: oklch(99% 0.005 75);
+  --color-border: oklch(90% 0.02 65);
+  --color-text: oklch(26% 0.025 50);
+  --color-text-muted: oklch(58% 0.03 60);
+  --font-sans: 'Manrope', sans-serif;
+  --font-serif: 'Newsreader', serif;
+}
+
+@layer base {
+  html {
+    font-family: 'Manrope', sans-serif;
+    line-height: 1.5;
+  }
+
+  body {
+    background-color: oklch(97.5% 0.014 75);
+    color: oklch(26% 0.025 50);
+  }
+
+  input, textarea {
+    background-color: transparent;
+    color: oklch(26% 0.025 50);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: oklch(58% 0.03 60);
+  }
+
+  ::selection {
+    background: oklch(80% 0.1 45 / 0.4);
+  }
+}
