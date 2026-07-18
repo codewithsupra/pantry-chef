@@ -1,14 +1,13 @@
-import React from "react";
-import { Await, Link, useLoaderData } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useLoaderData } from "react-router";
 import classNames from "classnames";
 import type { Route } from "./+types/discover";
 import { db } from "~/lib/db.server";
-import { requireLoggedInUserMiddleware, userContext } from "~/middleware/auth.middleware";
-import { baselineMatch, aiMatch, type RecipeMatch } from "~/lib/pantry-recipe-matcher.server";
+import { userContext } from "~/middleware/auth.middleware";
+import { baselineMatch, type RecipeMatch } from "~/lib/pantry-recipe-matcher.server";
 import { TimeIcon, AiEditIcon } from "~/components/icons";
 
-export const middleware = [requireLoggedInUserMiddleware];
-
+// Login is already enforced by the parent /app route's middleware.
 export async function loader({ context }: Route.LoaderArgs) {
   const user = context.get(userContext);
 
@@ -27,26 +26,67 @@ export async function loader({ context }: Route.LoaderArgs) {
     }),
   ]);
 
-  const matchInput = {
+  const baseline = baselineMatch({
     pantryItems: pantryItems.map(p => p.name),
     recipes: recipes.map(r => ({ id: r.id, name: r.name, ingredients: r.ingredients.map(i => i.name) })),
-  };
+  });
 
-  const baseline = baselineMatch(matchInput);
-  // Not awaited: streamed to the client via <Await> so the baseline ranking
-  // renders immediately instead of blocking the whole page on the AI call.
-  const aiRanking = aiMatch(matchInput);
-
-  return {
-    recipes,
-    baseline,
-    aiRanking,
-    pantryItemCount: pantryItems.length,
-  };
+  return { recipes, baseline, pantryItemCount: pantryItems.length };
 }
 
 export default function Discover() {
-  const { recipes, baseline, aiRanking, pantryItemCount } = useLoaderData<typeof loader>();
+  const { recipes, baseline, pantryItemCount } = useLoaderData<typeof loader>();
+
+  // Fetched client-side, after the base ranking has already painted, via a
+  // plain streamed fetch rather than React Router's own data loading (see
+  // api/discover-match.ts for why: a response that's silent for the ~7s
+  // the AI call takes and then sends everything at once gets its
+  // connection killed somewhere in this environment's network path).
+  const [aiMatches, setAiMatches] = useState<RecipeMatch[] | null>(null);
+  const [aiPending, setAiPending] = useState(true);
+
+  useEffect(() => {
+    if (recipes.length === 0 || pantryItemCount === 0) return;
+
+    // `active` (not a ref) so each effect invocation owns its own
+    // lifecycle. In React's dev-mode double-invoke, the first invocation's
+    // cleanup sets its own `active = false` and aborts its own fetch, but
+    // that must not block the *second* invocation from starting a fresh
+    // one — which a persistent ref-based "already started" guard would do.
+    let active = true;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/discover-match", { signal: controller.signal });
+        if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const event = JSON.parse(line) as { type: string; matches?: RecipeMatch[] | null };
+            if (event.type === "result" && active) setAiMatches(event.matches ?? null);
+          }
+        }
+      } catch {
+        // Base ranking already rendered; the AI refinement is a bonus.
+      } finally {
+        if (active) setAiPending(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [recipes.length, pantryItemCount]);
 
   if (recipes.length === 0) {
     return (
@@ -77,23 +117,19 @@ export default function Discover() {
 
       <MatchList matches={baseline} byId={byId} aiRanked={false} />
 
-      <React.Suspense fallback={<AiRankingPending />}>
-        <Await resolve={aiRanking} errorElement={null}>
-          {resolved =>
-            resolved ? (
-              <div className="mt-10 pt-8 border-t border-stone-200">
-                <div className="flex items-center gap-2 mb-4 text-primary">
-                  <AiEditIcon />
-                  <h2 className="text-lg font-semibold text-stone-800">
-                    Refined with semantic matching + substitutions
-                  </h2>
-                </div>
-                <MatchList matches={resolved} byId={byId} aiRanked />
-              </div>
-            ) : null
-          }
-        </Await>
-      </React.Suspense>
+      {aiMatches && aiMatches.length > 0 ? (
+        <div className="mt-10 pt-8 border-t border-stone-200">
+          <div className="flex items-center gap-2 mb-4 text-primary">
+            <AiEditIcon />
+            <h2 className="text-lg font-semibold text-stone-800">
+              Refined with semantic matching + substitutions
+            </h2>
+          </div>
+          <MatchList matches={aiMatches} byId={byId} aiRanked />
+        </div>
+      ) : aiPending ? (
+        <AiRankingPending />
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,6 @@
-import { OpenRouter } from "@openrouter/sdk";
 import { z } from "zod";
 
-const openrouter = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
+import { completeJSON } from "./llm.server";
 
 export type MatchInput = {
   pantryItems: string[];
@@ -67,48 +66,29 @@ export function baselineMatch({ pantryItems, recipes }: MatchInput): RecipeMatch
  * already in the pantry. Returns null on any failure so the caller can
  * keep serving the baseline instead of breaking the page.
  */
-const AI_MATCH_TIMEOUT_MS = 15_000;
-
 export async function aiMatch(input: MatchInput): Promise<RecipeMatch[] | null> {
   if (input.recipes.length === 0) return [];
 
-  try {
-    // Bounded explicitly rather than relying on the SSR stream's own
-    // timeout: that timeout aborts the whole page, not just this
-    // <Suspense> boundary, so a slow model call must never be allowed to
-    // outlive it. gpt-4o-mini specifically (not a reasoning model): a
-    // chain-of-thought model was measured taking 30s+ on this prompt,
-    // which is not a workable latency for an interactive page.
-    const res = await Promise.race([
-      openrouter.chat.send({
-        chatRequest: {
-          model: "openai/gpt-4o-mini",
-          messages: [{ role: "user", content: buildPrompt(input) }],
-        },
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("AI match timed out")), AI_MATCH_TIMEOUT_MS),
-      ),
-    ]);
-    const text = (res as any).choices[0]?.message?.content ?? "";
-    const parsed = matchSchema.safeParse(JSON.parse(extractJson(text)));
-    if (!parsed.success) return null;
+  // Bounded through llm.server's deadline (which also handles the
+  // free-tier model fallback chain) rather than relying on the SSR
+  // stream's own timeout: that timeout aborts the whole page, not just
+  // this <Suspense> boundary, so a slow model call must never be allowed
+  // to outlive it.
+  const parsed = await completeJSON([{ role: "user", content: buildPrompt(input) }], matchSchema);
+  if (!parsed) return null;
 
-    // Guard against the model inventing recipe ids that don't exist, and
-    // recompute readiness ourselves from the have/missing counts instead of
-    // trusting the model's own percentage — LLMs are unreliable at exact
-    // arithmetic even when their ingredient categorization is correct.
-    const validIds = new Set(input.recipes.map(r => r.id));
-    const matches = parsed.data.matches
-      .filter(m => validIds.has(m.recipeId))
-      .map(m => {
-        const total = m.haveIngredients.length + m.missingIngredients.length;
-        return { ...m, readiness: total > 0 ? Math.round((m.haveIngredients.length / total) * 100) : 0 };
-      });
-    return matches.sort((a, b) => b.readiness - a.readiness);
-  } catch {
-    return null;
-  }
+  // Guard against the model inventing recipe ids that don't exist, and
+  // recompute readiness ourselves from the have/missing counts instead of
+  // trusting the model's own percentage — LLMs are unreliable at exact
+  // arithmetic even when their ingredient categorization is correct.
+  const validIds = new Set(input.recipes.map(r => r.id));
+  const matches = parsed.matches
+    .filter(m => validIds.has(m.recipeId))
+    .map(m => {
+      const total = m.haveIngredients.length + m.missingIngredients.length;
+      return { ...m, readiness: total > 0 ? Math.round((m.haveIngredients.length / total) * 100) : 0 };
+    });
+  return matches.sort((a, b) => b.readiness - a.readiness);
 }
 
 function buildPrompt({ pantryItems, recipes }: MatchInput): string {
@@ -129,11 +109,4 @@ ${recipeList}
 
 Return ONLY valid JSON in exactly this shape, no markdown fences, no commentary:
 {"matches":[{"recipeId":"...","readiness":0-100,"haveIngredients":["..."],"missingIngredients":["..."],"substitutions":[{"missing":"...","suggestion":"..."}]}]}`;
-}
-
-function extractJson(text: string): string {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object found in AI response");
-  return text.slice(start, end + 1);
 }

@@ -1,65 +1,94 @@
-import { Await, Link, Outlet, useLoaderData, useLocation, useRouteError } from "react-router";
-import React from 'react';
+import { data, Form, useActionData, useNavigation } from "react-router";
+import { z } from "zod";
 import type { Route } from "./+types/settings";
-export async function loader(){
-    const slowMessage= new Promise<string>((resolve,reject)=>setTimeout(()=>resolve('message is slow'),700))
-    return {
-        message:'helooooo',
-        slowMessage,
-        date:new Date(Date.parse("2025-01-01"))
-    }
+import { userContext } from "~/middleware/auth.middleware";
+import { updateUser } from "~/models/user.server";
+import { validateForm, type FieldErrors } from "~/lib/validation.server";
+import { Input } from "~/components/forms.component";
+import { PrimaryButton } from "~/components/button.component";
+
+const profileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+
+export function meta(): ReturnType<Route.MetaFunction> {
+  return [{ title: "Settings · PantryChef" }];
 }
 
-export default function Settings() {  
-    const location=useLocation();
-    const data=useLoaderData<typeof loader>();
-    const{slowMessage,message,date}=data;
-    return (
-        <div className="flex flex-col items-center justify-center h-screen border-2 border-gray-300  rounded-lg p-8">
-            <h1 className="text-4xl font-bold mb-4">Settings Page</h1>
-            <p className="text-lg text-gray-600">{message}</p>
-            <p>Date:{date.toLocaleString()}</p>
-            <React.Suspense fallback={<div>Loading....</div>} key={location.pathname}>
-            <Await resolve={slowMessage} errorElement={<div>Could not load</div>}>
-                {(value)=><p>{value}</p>}
+// Login is already enforced by the parent /app route's middleware.
+export async function loader({ context }: Route.LoaderArgs) {
+  const user = context.get(userContext);
+  return { user };
+}
 
-            </Await>
-            </React.Suspense>
-            
-            <nav>
-                <ul className="flex gap-4">
-                    <li>
-                        <Link to="app">go to App</Link>
-                    </li>
-                    <li>
-                        <Link to="profile">go to Profile</Link>
-                    </li>
-                </ul>
-            </nav>
-            <Outlet />
+export async function action({ request, context }: Route.ActionArgs) {
+  const user = context.get(userContext);
+  const formData = await request.formData();
+
+  return validateForm(
+    formData,
+    profileSchema,
+    async ({ firstName, lastName }) => {
+      await updateUser(user.id, { first_name: firstName, last_name: lastName });
+      return data({ ok: true });
+    },
+    errors => data({ errors }, { status: 400 }),
+  );
+}
+
+export default function Settings({ loaderData }: Route.ComponentProps) {
+  const { user } = loaderData;
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const isSaving = navigation.state === "submitting";
+  const errors = (actionData as { errors?: FieldErrors })?.errors;
+  const saved = (actionData as { ok?: boolean })?.ok;
+
+  return (
+    <div className="px-14 py-11 max-w-md">
+      <h1 className="font-serif font-medium text-[32px] text-stone-800 mb-1">Your account</h1>
+      <p className="text-stone-400 text-[15px] mb-9">Update your name or sign out below.</p>
+
+      <Form method="post" className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="First name"
+            id="firstName"
+            name="firstName"
+            defaultValue={user.first_name}
+            error={!!errors?.firstName}
+          />
+          <Input
+            label="Last name"
+            id="lastName"
+            name="lastName"
+            defaultValue={user.last_name}
+            error={!!errors?.lastName}
+          />
         </div>
-    );
-}
-
-export function ErrorBoundary({error}:Route.ErrorBoundaryProps){
-    // const error=useRouteError()
-    if(error instanceof Error){
-        return(
-        <div className="bg-red-300 border-2 border-red-600 roundd-md p-4">
-        <h1>Something went wrong! Keep trying</h1>
-        <p>{error.message}</p>
-
-    </div>
+        {(errors?.firstName || errors?.lastName) && (
+          <p className="text-sm text-red-400 -mt-2">{errors.firstName || errors.lastName}</p>
         )}
-    return(
-        <div>
-            <span className="text-2xl">Unexpected Error</span>
 
+        <Input label="Email" id="email" name="email" defaultValue={user.email} disabled />
+        <p className="text-xs text-stone-400 -mt-3">Email is tied to your magic-link sign-in and can&rsquo;t be changed here.</p>
+
+        <div className="flex items-center gap-3 mt-2">
+          <PrimaryButton type="submit" disabled={isSaving}>
+            {isSaving ? "Saving…" : "Save changes"}
+          </PrimaryButton>
+          {saved && <span className="text-sm text-emerald-600 font-medium">Saved.</span>}
         </div>
-    )
+      </Form>
 
-        
-
-    }
-    
-
+      <div className="mt-10 pt-6 border-t border-stone-200">
+        <Form method="post" action="/logout">
+          <button type="submit" className="text-sm text-stone-400 hover:text-red-400 transition-colors font-medium">
+            Sign out
+          </button>
+        </Form>
+      </div>
+    </div>
+  );
+}

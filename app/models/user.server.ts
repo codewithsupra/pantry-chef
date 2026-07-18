@@ -17,3 +17,7 @@ export function getUserById(id:string){
         }
     })
 }
+
+export function updateUser(id: string, data: { first_name: string; last_name: string }) {
+  return db.user.update({ where: { id }, data });
+}

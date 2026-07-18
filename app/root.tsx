@@ -1,30 +1,25 @@
 
 import {
-  data,
   isRouteErrorResponse,
   Link,
   Links,
   Meta,
-  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
-  useNavigation,
-  useResolvedPath,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { Toaster } from "react-hot-toast";
-import { DiscoverIcon, HomeIcon, LoginIcon, RecipeBookIcon, SettingsIcon } from "./components/icons";
-import classNames from "classnames";
-import { getCurrentUser } from "./auth/auth.server";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Recipe App" },
-    { name: "description", content: "A simple recipe app built with React Router." },
+    { title: "PantryChef" },
+    {
+      name: "description",
+      content: "Track your pantry, rank recipes by what you can cook right now, and let an AI agent do the busywork.",
+    },
   ];
 }
 
@@ -52,7 +47,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="md:flex h-screen">
+      <body className="h-screen">
         {children}
         <Toaster position="bottom-right" />
         <ScrollRestoration />
@@ -61,115 +56,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-export const loader=async({request}: Route.LoaderArgs)=>{
-  const user=await getCurrentUser(request);
-  return data({
-    isLoggedIn:user!==null
-  })
-
-}
+// Each top-level route (marketing home, the authenticated /app shell, login)
+// owns its own header/nav — there's no shared chrome at the root, so a public
+// visitor on "/" never sees the authenticated app's navigation.
 export default function App() {
-  const { isLoggedIn } = useLoaderData<typeof loader>();
- 
-  
-
-  
-
-  return (
-    <>
-      <nav className="text-white md:w-16 md:flex flex-col justify-between" style={{ background: "oklch(27% 0.03 45)", borderRight: "1px solid oklch(20% 0.02 45)" }}>
-        <ul className="flex md:flex-col gap-4">
-          <AppNavLink to="/">
-            <HomeIcon />
-          </AppNavLink>
-          <AppNavLink to="discover">
-            <DiscoverIcon />
-          </AppNavLink>
-          {isLoggedIn && (
-            <AppNavLink to="app">
-              <RecipeBookIcon />
-            </AppNavLink>
-          )}
-          <AppNavLink to="settings">
-            <SettingsIcon />
-          </AppNavLink>
-        </ul>
-        <ul>
-          <li className="w-full flex justify-center relative group">
-            <Link to={isLoggedIn ? "logout" : "login"}>
-              <div style={{ color: "oklch(78% 0.02 60)", borderRadius: 12, margin: "2px auto", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <LoginIcon />
-              </div>
-            </Link>
-            <div className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-              <div className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-lg" style={{ background: "oklch(20% 0.02 45)", color: "oklch(90% 0.02 45)", border: "1px solid oklch(30% 0.03 45)" }}>
-                {isLoggedIn ? "Log out" : "Log in"}
-              </div>
-              <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-2 rotate-45" style={{ background: "oklch(20% 0.02 45)", border: "1px solid oklch(30% 0.03 45)", borderRight: "none", borderTop: "none" }} />
-            </div>
-          </li>
-        </ul>
-      </nav>
-      <div className="w-full md:w-[calc(100%-4rem)] overflow-y-auto h-full">
-        <Outlet />
-      </div>
-    </>
-  );
-}
-
-type AppNavLinkProps = {
-  children: React.ReactNode;
-  to: string;
-  tooltip?: string;
-};
-
-function AppNavLink({ to, children, tooltip }: AppNavLinkProps) {
-  const navigation = useNavigation();
-  const absolutePath = useResolvedPath(to);
-  const isLoading = navigation.state === 'loading' && navigation.location.pathname === absolutePath.pathname;
-  return (
-    <li className="w-full flex justify-center relative group">
-      <NavLink to={to}>
-        {({ isActive }) => (
-          <div
-            className={classNames(
-              'flex items-center justify-center transition-colors duration-300',
-              { "animate-pulse": isLoading }
-            )}
-            style={{
-              color: isActive ? "oklch(76% 0.13 45)" : "oklch(78% 0.02 60)",
-              background: isActive ? "oklch(38% 0.05 45)" : "transparent",
-              borderRadius: 12,
-              margin: "2px auto",
-              width: 44,
-              height: 44,
-            }}
-          >
-            {children}
-          </div>
-        )}
-      </NavLink>
-      {tooltip && (
-        <div className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <div
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shadow-lg"
-            style={{
-              background: "oklch(20% 0.02 45)",
-              color: "oklch(90% 0.02 45)",
-              border: "1px solid oklch(30% 0.03 45)",
-            }}
-          >
-            {tooltip}
-          </div>
-          {/* arrow */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-2 rotate-45"
-            style={{ background: "oklch(20% 0.02 45)", border: "1px solid oklch(30% 0.03 45)", borderRight: "none", borderTop: "none" }}
-          />
-        </div>
-      )}
-    </li>
-  );
+  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

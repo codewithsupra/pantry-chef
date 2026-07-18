@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { NavLink, Outlet, useLoaderData } from "react-router";
+import { Link, NavLink, Outlet, useLoaderData } from "react-router";
 import type { Route } from "./+types/app";
 import { getCurrentUser } from "~/auth/auth.server";
 import { requireLoggedInUserMiddleware } from "~/middleware/auth.middleware";
@@ -16,16 +16,21 @@ export default function App() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-14 flex items-center justify-between py-5 border-b border-stone-200">
-        <h1 className="font-serif font-medium text-2xl text-stone-800 m-0">Recipes</h1>
+        <Link to="/app" className="font-serif font-medium text-2xl text-stone-800 m-0 hover:text-primary transition-colors">
+          PantryChef
+        </Link>
         {user && (
-          <p className="text-stone-500 text-sm">
-            Welcome, <span className="font-semibold text-stone-700">{user.first_name} {user.last_name}</span>
-          </p>
+          <Link to="/app/settings" className="text-stone-500 text-sm hover:text-primary transition-colors">
+            <span className="font-semibold text-stone-700">{user.first_name} {user.last_name}</span>
+          </Link>
         )}
       </div>
       <nav className="px-14 flex gap-1 pt-3 pb-0 border-b border-stone-200">
         <RemixNavLink to="recipes">Recipes</RemixNavLink>
         <RemixNavLink to="pantry">Pantry</RemixNavLink>
+        <RemixNavLink to="assistant">Chef</RemixNavLink>
+        <RemixNavLink to="discover">Discover</RemixNavLink>
+        <RemixNavLink to="settings">Settings</RemixNavLink>
       </nav>
       <div className="flex-1 overflow-y-auto min-h-0"><Outlet /></div>
     </div>

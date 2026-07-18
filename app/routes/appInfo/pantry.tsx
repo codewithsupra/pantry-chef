@@ -299,12 +299,14 @@ function Shelf({ shelf, dotColorClass }: ShelfProps) {
 
   return (
     <div className="bg-stone-50 border border-stone-200 rounded-[18px] p-5 pb-4.5 flex flex-col shadow-sm">
-      {/* Shelf name row */}
-      <saveShelfNameFetcher.Form method="post">
-        <input type="hidden" name="_action" value="saveShelfName" />
-        <input type="hidden" name="shelfId" value={shelf.id} />
-        <div className="group flex items-start gap-2.5 mb-1">
-          <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${dotColorClass}`} />
+      {/* Shelf name row. The delete button is a sibling form, not a child:
+          nesting a <form> inside another <form> is invalid HTML — browsers
+          drop the inner one and React hydration fails. */}
+      <div className="group flex items-start gap-2.5 mb-1">
+        <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${dotColorClass}`} />
+        <saveShelfNameFetcher.Form method="post" className="flex-1">
+          <input type="hidden" name="_action" value="saveShelfName" />
+          <input type="hidden" name="shelfId" value={shelf.id} />
           <div className="flex-1 flex items-start gap-1.5">
             <div className="flex-1">
               <input
@@ -339,7 +341,8 @@ function Shelf({ shelf, dotColorClass }: ShelfProps) {
               </svg>
             </button>
           </div>
-          <deleteShelfFetcher.Form method="post" className="mt-0.5">
+        </saveShelfNameFetcher.Form>
+        <deleteShelfFetcher.Form method="post" className="mt-0.5">
             <input type="hidden" name="shelfId" value={shelf.id} />
             <button
               name="_action"
@@ -354,9 +357,8 @@ function Shelf({ shelf, dotColorClass }: ShelfProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
-          </deleteShelfFetcher.Form>
-        </div>
-      </saveShelfNameFetcher.Form>
+        </deleteShelfFetcher.Form>
+      </div>
 
       {/* Divider */}
       <div className="h-px bg-stone-100 my-2" />

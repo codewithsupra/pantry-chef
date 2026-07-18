@@ -12,18 +12,12 @@ import classNames from "classnames";
 import { DeleteButton, SaveButton } from "~/components/button.component";
 import { validateForm } from "~/lib/validation.server";
 import z from "zod";
-import { OpenRouter } from "@openrouter/sdk";
+import { complete } from "~/lib/llm.server";
 
-const openrouter = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
-
+// Routed through the shared free-model fallback chain (llm.server) so a
+// single flaky free endpoint can't break recipe enrichment.
 async function callAI(prompt: string): Promise<string> {
-    const res = await openrouter.chat.send({
-        chatRequest: {
-            model: "poolside/laguna-m.1:free",
-            messages: [{ role: "user", content: prompt }],
-        }
-    });
-    return (res as any).choices[0]?.message?.content ?? "";
+    return complete([{ role: "user", content: prompt }]);
 }
 
 
