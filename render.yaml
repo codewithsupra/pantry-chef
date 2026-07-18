@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: pantry-chef
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_COOKIE_SECRET
+        generateValue: true
+      - key: MAGIC_LINK_KEY
+        generateValue: true
+      - key: ORIGIN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false

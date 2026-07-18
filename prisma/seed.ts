@@ -103,14 +103,15 @@ function getRecipes(userId: string) {
 }
 
 async function seed() {
+  const email = process.env.SEED_EMAIL || "test@test.com";
+  const [first_name, last_name] = process.env.SEED_NAME
+    ? process.env.SEED_NAME.split(" ")
+    : ["Test", "User"];
+
   const user = await db.user.upsert({
-    where: { email: "test@test.com" },
+    where: { email },
     update: {},
-    create: {
-      email: "test@test.com",
-      first_name: "Test",
-      last_name: "User",
-    },
+    create: { email, first_name, last_name: last_name || "" },
   });
 
   // Delete existing data for this user to avoid duplicates
