@@ -1,87 +1,31 @@
-# Welcome to React Router!
+# PantryChef
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Track what's in your kitchen, see which of your saved recipes you can actually cook right now, and let an agent handle the busywork.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+**Live:** https://pantry-chef-7s80.onrender.com
 
-## Features
+## What it does
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **Pantry tracking** — shelves and items with inline editing and instant search. Every action (rename, delete, add) is a real HTML form under a React Router `useFetcher`, so it degrades to working plain `<form>` submissions with JavaScript off, not just an optimistic-UI demo.
+- **Recipe readiness matching** — the Discover page ranks your saved recipes by how much of each is already in your pantry. A baseline string-match ranking renders instantly, then a second pass through a free-tier LLM refines it with semantic matches and real ingredient substitutions (e.g. milk + lemon juice for buttermilk), streamed in without blocking the first paint.
+- **Chef, a tool-calling agent** — ask it to plan a meal, add ingredients to your pantry, or draft a recipe from what you have. It calls real tools against your Postgres data and streams each step (plan → tool call → result) to the UI as it happens, not just a final answer.
 
-## Getting Started
+## Stack
 
-### Installation
+React Router v7 (SSR, loaders/actions, file-based routes) · Prisma + PostgreSQL (Neon) · Tailwind · magic-link auth (Resend) · OpenRouter, with a fallback chain across three free-tier models (nemotron → llama-3.3 → gemma) since free endpoints fail or stall often enough that no single one can be trusted alone.
 
-Install the dependencies:
+## Local development
 
 ```bash
 npm install
-```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
+docker compose up -d          # local Postgres
+npx prisma migrate deploy
+npx prisma db seed            # optional: sample shelves and recipes
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
+Copy `.env.example`-style values into `.env` (see `prisma.config.ts` for what's required: `DATABASE_URL`, `AUTH_COOKIE_SECRET`, `MAGIC_LINK_KEY`, `ORIGIN`, `RESEND_API_KEY`, `OPENROUTER_API_KEY`). In dev, `login` also prints the magic link straight to the server console, so signing in doesn't require a working email account.
 
 ## Deployment
 
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+Deployed on Render from the included `Dockerfile`. One thing worth knowing if you fork this: `prisma.config.ts` requires `DATABASE_URL` to resolve at all, even for `prisma generate`, which never opens a connection — but Render only injects real env vars at container *runtime*, not during `docker build`. Each build stage sets a placeholder `DATABASE_URL` for that reason; the real value from Render overrides it once the container starts, and `prisma migrate deploy` runs before the server does.
