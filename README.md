@@ -12,7 +12,7 @@ Track what's in your kitchen, see which of your saved recipes you can actually c
 
 ## Stack
 
-React Router v7 (SSR, loaders/actions, file-based routes) · Prisma + PostgreSQL (Neon) · Tailwind · magic-link auth (Resend) · OpenRouter, with a fallback chain across three free-tier models (nemotron → llama-3.3 → gemma) since free endpoints fail or stall often enough that no single one can be trusted alone.
+React Router v8 (SSR, loaders/actions, file-based routes) · Prisma + PostgreSQL (Neon) · Tailwind · magic-link auth (Resend) · OpenRouter, with a fallback chain across three free-tier models (nemotron → llama-3.3 → gemma) since free endpoints fail or stall often enough that no single one can be trusted alone.
 
 ## Local development
 
