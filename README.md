@@ -2,7 +2,7 @@
 
 Track what's in your kitchen, see which of your saved recipes you can actually cook right now, and let an agent handle the busywork.
 
-**Live:** https://pantry-chef-7s80.onrender.com
+**Live:** https://pantry-chef-63808735-68ed-4572-ad6e-8395ee50d819.fly.dev
 
 ## What it does
 
@@ -28,4 +28,8 @@ Copy `.env.example`-style values into `.env` (see `prisma.config.ts` for what's 
 
 ## Deployment
 
-Deployed on Render from the included `Dockerfile`. One thing worth knowing if you fork this: `prisma.config.ts` requires `DATABASE_URL` to resolve at all, even for `prisma generate`, which never opens a connection — but Render only injects real env vars at container *runtime*, not during `docker build`. Each build stage sets a placeholder `DATABASE_URL` for that reason; the real value from Render overrides it once the container starts, and `prisma migrate deploy` runs before the server does.
+Deployed on [InsForge Compute](https://insforge.dev) (Fly.io machines) from the included `Dockerfile`, with Postgres on Neon. The service scales to zero when idle and wakes on the next request.
+
+One thing worth knowing if you fork this: `prisma.config.ts` requires `DATABASE_URL` to resolve at all, even for `prisma generate`, which never opens a connection — but real env vars are only injected at container *runtime*, not during `docker build`. Each build stage sets a placeholder `DATABASE_URL` for that reason; the real value overrides it once the container starts, and `prisma migrate deploy` runs before the server does.
+
+`ORIGIN` must be set to the public URL of the deployment, since magic-link sign-in builds its links from it. The container listens on port 3000 (`PORT=3000`).
