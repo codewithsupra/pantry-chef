@@ -2,6 +2,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/home.tsx"),
+  route("api/health", "routes/api/health.ts"),
   route("api/assistant", "routes/api/assistant.ts"),
   route("api/discover-match", "routes/api/discover-match.ts"),
   route("app", "routes/app.tsx", [
