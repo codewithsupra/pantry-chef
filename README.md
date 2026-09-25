@@ -2,7 +2,7 @@
 
 Track what's in your kitchen, see which of your saved recipes you can actually cook right now, and let an agent handle the busywork.
 
-**Live:** https://pantry-chef-7s80.onrender.com
+**Live:** https://pantry-chef-63808735-68ed-4572-ad6e-8395ee50d819.fly.dev
 
 ## What it does
 
